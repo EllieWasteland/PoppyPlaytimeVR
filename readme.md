@@ -21,7 +21,7 @@ Poppy Playtime VR Mod is a virtual reality modification that completely transfor
 
 ## Download and Installation
 
-The automated installer (`PoppyPlaytimeVR_Installer.exe`) is available in the **[Releases](../../releases)** section of this repository.
+The automated installer (`PoppyInstaller_VR.exe`) is available in the **[Releases](../../releases)** section of this repository.
 
 **Steps:**
 
