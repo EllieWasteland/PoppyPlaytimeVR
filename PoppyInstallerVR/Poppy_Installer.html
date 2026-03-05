@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PoppyCommunityVR - Setup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            overflow: hidden; 
+            user-select: none; 
+            background-color: #0f172a;
+        }
+
+        /* Fondo borroso y oscuro con la imagen back.jpg */
+        .bg-layer {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-image: url('background.jpg');
+            background-size: cover;
+            background-position: center;
+            filter: blur(12px) brightness(0.25);
+            transform: scale(1.1); /* Evita bordes blancos por el blur */
+        }
+
+        /* Estilos del Acordeón */
+        .accordion-container {
+            display: flex;
+            width: 100%;
+            height: 80vh;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .step-card {
+            position: relative;
+            border-radius: 2rem;
+            overflow: hidden;
+            transition: all 0.7s cubic-bezier(0.25, 1, 0.2, 1);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Estado Activo (Expandido) - Oscuro puro con blur */
+        .step-card.active {
+            flex: 1 1 65%;
+            background: rgba(0, 0, 0, 0.65);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Estado Inactivo (Colapsado a la derecha) */
+        .step-card.inactive {
+            flex: 0 0 100px;
+            background: rgba(0, 0, 0, 0.2);
+            cursor: default;
+        }
+
+        /* Estado Completado (Colapsado a la izquierda) */
+        .step-card.completed {
+            flex: 0 0 80px;
+            background: rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+            opacity: 0.5;
+        }
+        .step-card.completed:hover {
+            opacity: 1;
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        /* Visibilidad de contenidos */
+        .content-active { opacity: 0; display: none; }
+        .content-collapsed { display: flex; opacity: 1; transition: opacity 0.4s ease; }
+
+        .active .content-active { 
+            display: flex; 
+            flex-direction: column; 
+            height: 100%; 
+            opacity: 1;
+        }
+        .active .content-collapsed { display: none; }
+        
+        .inactive .content-active, .completed .content-active { display: none; }
+
+        /* Animaciones para los elementos internos */
+        @keyframes slideFade {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .active .anim-1 { animation: slideFade 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.2s; opacity: 0; }
+        .active .anim-2 { animation: slideFade 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.35s; opacity: 0; }
+        .active .anim-3 { animation: slideFade 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.5s; opacity: 0; }
+
+        /* Efecto de flotación para iconos de fondo */
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(3deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        .icon-float {
+            animation: float 8s ease-in-out infinite;
+        }
+
+        /* Texto Vertical para cards colapsadas */
+        .vertical-text {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            white-space: nowrap;
+        }
+
+        /* Botones personalizados (Glass/Oscuros) */
+        .btn-primary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.95);
+            color: black;
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px -5px rgba(255, 255, 255, 0.2);
+        }
+        .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col items-center justify-center p-6 text-white">
+
+    <div class="bg-layer"></div>
+    <div class="fixed top-0 left-0 w-full h-12 z-40 pywebview-drag-region cursor-move"></div>
+    
+    <button onclick="apiCall('close_app')" class="absolute top-6 right-6 z-50 text-white/40 hover:text-white transition-colors bg-black/40 p-2 rounded-full backdrop-blur-md border border-white/10">
+        <i data-lucide="x" class="w-6 h-6"></i>
+    </button>
+
+    <main class="w-full max-w-[1200px]">
+        <div class="accordion-container" id="accordion">
+            
+            <!-- STEP 1: Idioma -->
+            <div id="card-1" class="step-card active">
+                <!-- Collapsed View -->
+                <div class="content-collapsed h-full flex-col items-center py-10">
+                    <div class="text-white/40 font-mono text-xl">— 01</div>
+                    <div class="flex-1"></div>
+                    <div class="vertical-text text-2xl font-semibold tracking-wider text-white/50">Idioma</div>
+                </div>
+                <!-- Active View -->
+                <div class="content-active p-12 relative overflow-hidden">
+                    <div class="text-white/50 font-mono text-2xl mb-auto anim-1">— 01</div>
+                    
+                    <div class="absolute right-[-10%] top-[20%] opacity-[0.03] pointer-events-none icon-float">
+                        <i data-lucide="languages" class="w-96 h-96 text-white"></i>
+                    </div>
+
+                    <div class="mt-auto relative z-10 w-full max-w-xl">
+                        <h2 class="text-5xl font-extrabold text-white mb-6 leading-tight anim-1">Selecciona tu<br>Idioma</h2>
+                        <p class="text-white/60 mb-8 text-lg anim-2">Elige el idioma para continuar con el instalador. / Choose your language to continue the setup.</p>
+                        
+                        <div class="flex flex-col sm:flex-row gap-4 anim-3">
+                            <button onclick="selectLang('es', event)" class="flex-1 py-4 px-6 bg-white/5 border border-white/10 text-white rounded-2xl hover:bg-white hover:text-black transition-all font-bold text-lg backdrop-blur-md">Español</button>
+                            <button onclick="selectLang('en', event)" class="flex-1 py-4 px-6 bg-white/5 border border-white/10 text-white rounded-2xl hover:bg-white hover:text-black transition-all font-bold text-lg backdrop-blur-md">English</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 2: Bienvenida -->
+            <div id="card-2" class="step-card inactive">
+                <!-- Collapsed View -->
+                <div class="content-collapsed h-full flex-col items-center py-10">
+                    <div class="text-white/40 font-mono text-xl">— 02</div>
+                    <div class="flex-1"></div>
+                    <div class="vertical-text text-2xl font-semibold tracking-wider text-white/50" data-i18n="step_2_short">Bienvenida</div>
+                </div>
+                <!-- Active View -->
+                <div class="content-active p-12 relative overflow-hidden">
+                    <div class="text-white/50 font-mono text-2xl mb-auto anim-1">— 02</div>
+                    
+                    <div class="absolute right-[5%] top-[15%] opacity-[0.04] pointer-events-none transform rotate-12 icon-float">
+                        <i data-lucide="zap" class="w-80 h-80 text-white"></i>
+                    </div>
+
+                    <div class="mt-auto relative z-10 w-full max-w-xl">
+                        <h2 class="text-5xl font-extrabold text-white mb-6 leading-tight anim-1" data-i18n="step_2_title">Bienvenido</h2>
+                        <p class="text-white/60 mb-10 text-lg leading-relaxed anim-2" data-i18n="intro_msg">Este asistente instalará el Launcher en la carpeta base de tu juego. Es un proceso rápido y sencillo que preparará todo para la realidad virtual.</p>
+                        
+                        <div class="anim-3">
+                            <button onclick="goToStep(3, event)" class="btn-primary px-10 py-4 rounded-2xl font-bold text-lg transition-all flex items-center gap-3 w-max">
+                                <span data-i18n="btn_next">Comenzar</span>
+                                <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 3: Ubicación -->
+            <div id="card-3" class="step-card inactive">
+                <!-- Collapsed View -->
+                <div class="content-collapsed h-full flex-col items-center py-10">
+                    <div class="text-white/40 font-mono text-xl">— 03</div>
+                    <div class="flex-1"></div>
+                    <div class="vertical-text text-2xl font-semibold tracking-wider text-white/50" data-i18n="step_3_short">Ubicación</div>
+                </div>
+                <!-- Active View -->
+                <div class="content-active p-12 relative overflow-hidden">
+                    <div class="text-white/50 font-mono text-2xl mb-auto anim-1">— 03</div>
+                    
+                    <div class="absolute right-[5%] top-[20%] opacity-[0.04] pointer-events-none icon-float">
+                        <i data-lucide="folder-search" class="w-72 h-72 text-white"></i>
+                    </div>
+
+                    <div class="mt-auto relative z-10 w-full max-w-2xl">
+                        <h2 class="text-4xl font-extrabold text-white mb-6 anim-1" data-i18n="step_3_title">Directorio del Juego</h2>
+                        
+                        <!-- Panel de Contenido de Ubicación -->
+                        <div class="bg-black/40 border border-white/10 rounded-3xl p-6 mb-8 backdrop-blur-md min-h-[160px] flex flex-col justify-center anim-2 relative overflow-hidden">
+                            
+                            <!-- Cargando -->
+                            <div id="loc-loading" class="flex flex-col items-center text-center relative z-10">
+                                <i data-lucide="loader-2" class="w-10 h-10 text-white animate-spin mb-3 opacity-80"></i>
+                                <p class="text-white/70 font-medium" data-i18n="searching">Buscando el juego automáticamente...</p>
+                            </div>
+
+                            <!-- Encontrado -->
+                            <div id="loc-found" class="hidden flex-col relative z-10">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <i data-lucide="check-circle" class="text-white w-6 h-6"></i>
+                                    <h4 class="text-white font-bold text-lg" data-i18n="folder_found">¡Instalación detectada!</h4>
+                                </div>
+                                <p id="detected-path" class="text-white/60 font-mono text-sm break-all bg-white/5 p-3 rounded-xl border border-white/5 mb-4"></p>
+                                <button onclick="selectManualFolder(event)" class="text-white/40 hover:text-white text-sm flex items-center gap-2 w-max transition-colors">
+                                    <i data-lucide="folder-open" class="w-4 h-4"></i> <span data-i18n="btn_select_other">Elegir otra ruta manualmente</span>
+                                </button>
+                            </div>
+
+                            <!-- No Encontrado -->
+                            <div id="loc-manual" class="hidden flex-col items-center text-center relative z-10">
+                                <i data-lucide="alert-circle" class="text-white w-10 h-10 mb-3 opacity-80"></i>
+                                <p class="text-white/70 mb-4 font-medium" data-i18n="modal_not_found_desc">No pudimos localizar la ruta automáticamente. Selecciona la carpeta base de Poppy Playtime.</p>
+                                <button onclick="selectManualFolder(event)" class="bg-white/10 border border-white/20 text-white px-6 py-3 rounded-xl font-bold hover:bg-white hover:text-black transition-all shadow-lg" data-i18n="btn_select_folder">Examinar...</button>
+                            </div>
+
+                        </div>
+                        
+                        <div class="flex gap-4 anim-3">
+                            <button onclick="goToStep(2, event)" class="px-8 py-4 bg-transparent border border-white/20 text-white rounded-2xl font-bold transition-all hover:bg-white/10" data-i18n="btn_back">Atrás</button>
+                            <button id="btn-install" onclick="goToStep(4, event)" class="btn-primary flex-1 py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3" disabled>
+                                <span data-i18n="btn_install_now">Instalar Launcher</span>
+                                <i data-lucide="download" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 4: Instalación -->
+            <div id="card-4" class="step-card inactive">
+                <!-- Collapsed View -->
+                <div class="content-collapsed h-full flex-col items-center py-10">
+                    <div class="text-white/40 font-mono text-xl">— 04</div>
+                    <div class="flex-1"></div>
+                    <div class="vertical-text text-2xl font-semibold tracking-wider text-white/50" data-i18n="step_4_short">Instalación</div>
+                </div>
+                <!-- Active View -->
+                <div class="content-active p-12 relative overflow-hidden">
+                    <div class="text-white/50 font-mono text-2xl mb-auto anim-1">— 04</div>
+                    
+                    <!-- Progreso -->
+                    <div id="install-progress" class="mt-auto relative z-10 w-full flex flex-col items-center text-center pb-10">
+                        <div class="relative w-24 h-24 mb-8 anim-1">
+                            <div class="absolute inset-0 border-4 border-white/10 rounded-full"></div>
+                            <div class="absolute inset-0 border-4 border-white rounded-full border-t-transparent animate-spin"></div>
+                            <i data-lucide="cpu" class="absolute inset-0 m-auto w-8 h-8 text-white"></i>
+                        </div>
+                        <h2 class="text-4xl font-extrabold text-white mb-2 anim-2" data-i18n="installing">Configurando...</h2>
+                        <p class="text-white/60 text-lg anim-3">Copiando archivos y creando accesos directos.</p>
+                    </div>
+
+                    <!-- Completado -->
+                    <div id="install-success" class="hidden mt-auto relative z-10 w-full flex-col items-center text-center pb-4">
+                        <div class="w-24 h-24 bg-white/10 border border-white/20 rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl backdrop-blur-md anim-1">
+                            <i data-lucide="check" class="text-white w-12 h-12"></i>
+                        </div>
+                        <h2 class="text-5xl font-extrabold text-white mb-4 anim-2" data-i18n="success_title">¡Completado!</h2>
+                        <p class="text-white/60 text-lg mb-10 max-w-md anim-3" data-i18n="success_msg">Todo listo. El launcher ha sido instalado correctamente. Busca el acceso directo en tu escritorio.</p>
+                        <div class="w-full anim-3" style="animation-delay: 0.6s;">
+                            <button onclick="apiCall('close_app')" class="w-full max-w-sm py-4 bg-white text-black font-extrabold rounded-2xl hover:bg-white/80 transition-all shadow-xl text-lg" data-i18n="btn_close">Finalizar y Cerrar</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        const i18n = {
+            es: {
+                step_2_short: "Bienvenida",
+                step_2_title: "Bienvenido",
+                intro_msg: "Este asistente instalará el Launcher en la carpeta base de tu juego. Es un proceso rápido y sencillo que preparará todo para la realidad virtual.",
+                btn_next: "Comenzar",
+                step_3_short: "Ubicación",
+                step_3_title: "Directorio del Juego",
+                searching: "Buscando el juego automáticamente...",
+                folder_found: "¡Instalación detectada!",
+                btn_select_other: "Elegir otra ruta manualmente",
+                modal_not_found_desc: "No pudimos localizar la ruta automáticamente. Selecciona la carpeta base de Poppy Playtime.",
+                btn_select_folder: "Examinar carpeta...",
+                btn_back: "Atrás",
+                btn_install_now: "Instalar Launcher",
+                step_4_short: "Instalación",
+                installing: "Configurando y copiando...",
+                success_title: "¡Completado!",
+                success_msg: "Todo listo. El launcher ha sido instalado correctamente. Busca el acceso directo en tu escritorio.",
+                btn_close: "Finalizar y Cerrar"
+            },
+            en: {
+                step_2_short: "Welcome",
+                step_2_title: "Welcome",
+                intro_msg: "This wizard will install the Launcher in your game's root folder. It's a quick and simple process that will prep everything for VR.",
+                btn_next: "Get Started",
+                step_3_short: "Location",
+                step_3_title: "Game Directory",
+                searching: "Searching for game automatically...",
+                folder_found: "Compatible installation found!",
+                btn_select_other: "Choose another path manually",
+                modal_not_found_desc: "We couldn't locate the game path automatically. Please select the Poppy Playtime base folder.",
+                btn_select_folder: "Browse folder...",
+                btn_back: "Back",
+                btn_install_now: "Install Launcher",
+                step_4_short: "Installation",
+                installing: "Configuring and copying...",
+                success_title: "All Done!",
+                success_msg: "Everything is set. The launcher has been successfully installed. Look for the shortcut on your desktop.",
+                btn_close: "Finish & Close"
+            }
+        };
+
+        let currentLang = 'es';
+        let currentStep = 1;
+        let selectedPath = "";
+        let autoDetectDone = false;
+
+        async function apiCall(m, ...a) {
+            if (window.pywebview && window.pywebview.api) return await window.pywebview.api[m](...a);
+            // Mock API para pruebas en navegador
+            if(m === 'auto_find_dir') return new Promise(r => setTimeout(() => r(null), 1500)); 
+            if(m === 'select_folder') return "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Poppy Playtime";
+            if(m === 'verify_exe') return a[0];
+            return m === "install" ? new Promise(r => setTimeout(() => r('success'), 2500)) : true;
+        }
+
+        function translateUI() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (i18n[currentLang][key]) {
+                    if (el.tagName === 'INPUT') el.placeholder = i18n[currentLang][key];
+                    else el.textContent = i18n[currentLang][key];
+                }
+            });
+        }
+
+        function selectLang(l, event) {
+            if (event) event.stopPropagation();
+            currentLang = l;
+            translateUI();
+            goToStep(2);
+        }
+
+        function goToStep(stepNum, event) {
+            if (event) event.stopPropagation();
+            if (stepNum < currentStep) {
+                currentStep = stepNum;
+            } else if (stepNum > currentStep) {
+                currentStep = stepNum;
+            }
+
+            for (let i = 1; i <= 4; i++) {
+                const card = document.getElementById(`card-${i}`);
+                if (i === currentStep) {
+                    card.className = "step-card active";
+                } else if (i < currentStep) {
+                    card.className = "step-card completed";
+                    card.onclick = (e) => { if (currentStep < 4) goToStep(i, e); };
+                } else {
+                    card.className = "step-card inactive";
+                    card.onclick = null;
+                }
+            }
+
+            if (currentStep === 3 && !autoDetectDone) triggerAutoDetect();
+            if (currentStep === 4) startInstall();
+        }
+
+        async function triggerAutoDetect() {
+            autoDetectDone = true;
+            document.getElementById('loc-loading').classList.remove('hidden');
+            document.getElementById('loc-loading').classList.add('flex');
+            document.getElementById('loc-found').classList.add('hidden');
+            document.getElementById('loc-manual').classList.add('hidden');
+            document.getElementById('btn-install').disabled = true;
+
+            const path = await apiCall('auto_find_dir');
+            
+            document.getElementById('loc-loading').classList.add('hidden');
+            document.getElementById('loc-loading').classList.remove('flex');
+
+            if (path) {
+                selectedPath = path;
+                document.getElementById('detected-path').textContent = path;
+                document.getElementById('loc-found').classList.remove('hidden');
+                document.getElementById('loc-found').classList.add('flex');
+                document.getElementById('btn-install').disabled = false;
+            } else {
+                document.getElementById('loc-manual').classList.remove('hidden');
+                document.getElementById('loc-manual').classList.add('flex');
+            }
+        }
+
+        async function selectManualFolder(event) {
+            if (event) event.stopPropagation();
+            const path = await apiCall('select_folder');
+            if (path) {
+                const verified = await apiCall('verify_exe', path);
+                if (verified) {
+                    selectedPath = verified;
+                    
+                    document.getElementById('loc-manual').classList.add('hidden');
+                    document.getElementById('loc-manual').classList.remove('flex');
+                    
+                    document.getElementById('detected-path').textContent = selectedPath;
+                    document.getElementById('loc-found').classList.remove('hidden');
+                    document.getElementById('loc-found').classList.add('flex');
+                    
+                    document.getElementById('btn-install').disabled = false;
+                }
+            }
+        }
+
+        async function startInstall() {
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById(`card-${i}`).onclick = null;
+                document.getElementById(`card-${i}`).style.cursor = 'default';
+            }
+
+            const res = await apiCall('install', selectedPath, currentLang);
+            if (res === "success") {
+                document.getElementById('install-progress').classList.add('hidden');
+                document.getElementById('install-progress').classList.remove('flex');
+                document.getElementById('install-success').classList.remove('hidden');
+                document.getElementById('install-success').classList.add('flex');
+            }
+        }
+
+        // Initialize icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

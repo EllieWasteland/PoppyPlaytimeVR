@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poppy Playtime - Community VR Launcher</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @font-face {
+            font-family: 'CustomGameFont';
+            src: url('font.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * {
+            font-family: 'CustomGameFont', sans-serif !important;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            background-color: #000000; 
+            color: #ffffff;
+        }
+
+        .draggable { cursor: grab; }
+        .draggable:active { cursor: grabbing; }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease forwards;
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        .zoom-in-bg {
+            animation: zoomInBg 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        .card-enter {
+            animation: scaleUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes zoomInBg {
+            from { transform: scale(1.1); filter: blur(10px); opacity: 0; }
+            to { transform: scale(1); filter: blur(0); opacity: 1; }
+        }
+
+        @keyframes scaleUpFade {
+            from { opacity: 0; transform: scale(0.95); filter: blur(5px); }
+            to { opacity: 1; transform: scale(1); filter: blur(0); }
+        }
+
+        .minimal-spinner {
+            width: 3.5rem;
+            height: 3.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+
+<body class="draggable h-screen w-screen m-0 flex flex-col relative overflow-hidden text-white">
+
+    <button onclick="closeApp()" class="absolute top-6 right-6 z-50 text-white/40 hover:text-white transition-colors focus:outline-none cursor-pointer pointer-events-auto">
+        <i data-lucide="x" class="w-6 h-6 hover:scale-110 transition-transform"></i>
+    </button>
+
+    <div id="boot-screen" class="absolute inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-1000 pointer-events-auto">
+        <img src="ch1.jpg" onerror="this.src='https://images.unsplash.com/photo-1505569128003-826cce428b10?q=80&w=2000&auto=format&fit=crop'" 
+             class="absolute inset-0 w-full h-full object-cover opacity-30 grayscale mix-blend-screen" alt="Fondo" />
+        
+        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black"></div>
+
+        <div class="relative z-10 w-full max-w-md flex flex-col items-center mt-auto mb-32 px-8">
+            <h1 class="text-3xl md:text-4xl text-white/90 tracking-[0.2em] mb-2 text-center drop-shadow-lg" id="app-title">
+                POPPY PLAYTIME
+            </h1>
+            <h2 class="text-xl text-white/50 tracking-[0.4em] mb-12 text-center" id="app-subtitle">COMMUNITY VR</h2>
+            
+            <div class="w-full h-[2px] bg-white/10 overflow-hidden rounded-full">
+                <div id="boot-progress" class="h-full bg-white w-0 transition-all duration-100 ease-out shadow-[0_0_15px_rgba(255,255,255,0.8)]"></div>
+            </div>
+            
+            <p id="boot-text" class="text-white/70 text-[10px] mt-4 tracking-[0.3em] uppercase"></p>
+        </div>
+    </div>
+
+    <div id="main-ui" class="absolute inset-0 w-full h-full flex flex-col bg-black opacity-0 pointer-events-none transition-opacity duration-1000">
+        
+        <nav class="w-full flex justify-between items-center px-10 py-8 absolute top-0 z-50 pointer-events-auto">
+            <div class="flex items-center gap-3">
+                <span class="font-bold text-xl tracking-[0.2em] text-white">COMMUNITY <span class="text-white/50">VR</span></span>
+            </div>
+            
+            <div class="absolute left-1/2 -translate-x-1/2 text-[10px] font-semibold tracking-[0.25em] uppercase">
+                <span id="lbl-chapters" class="text-white cursor-pointer tracking-[0.4em]"></span>
+            </div>
+            <div></div>
+        </nav>
+
+        <div id="dynamic-view" class="absolute inset-0 w-full h-full z-0 overflow-hidden pointer-events-auto">
+        </div>
+
+    </div>
+
+    <div id="loading-view" class="hidden absolute inset-0 z-40 bg-black flex-col items-center justify-center pointer-events-auto fade-in">
+        <img id="loading-bg" src="" class="absolute inset-0 w-full h-full object-cover opacity-20 grayscale transition-opacity duration-1000" />
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm z-0"></div>
+        
+        <div class="relative z-10 flex flex-col items-center w-full max-w-2xl px-6 text-center">
+            <div class="minimal-spinner mb-10"></div>
+            
+            <h2 class="text-white/90 text-2xl md:text-3xl tracking-[0.15em] uppercase mb-6 drop-shadow-xl" id="loading-main-text"></h2>
+            
+            <div class="h-px w-24 bg-white/20 mx-auto mb-6"></div>
+            
+            <p id="loading-desc" class="text-white/50 tracking-[0.2em] text-[11px] md:text-xs uppercase leading-relaxed max-w-md"></p>
+        </div>
+    </div>
+
+    <div id="error-view" class="hidden absolute inset-0 z-50 bg-black flex-col items-center justify-center pointer-events-auto fade-in">
+        <i data-lucide="skull" class="w-12 h-12 text-white/50 mb-6 drop-shadow-lg"></i>
+        
+        <div class="w-full max-w-md text-center px-6">
+            <h2 id="error-title" class="text-white/90 text-2xl mb-2 tracking-widest"></h2>
+            <div class="h-px w-16 bg-white/30 mx-auto mb-8"></div>
+            
+            <p id="error-message" class="text-white/60 text-sm mb-4 font-light leading-relaxed"></p>
+            <p id="error-hint" class="text-white/40 text-xs italic tracking-wide mb-12"></p>
+        </div>
+
+        <button onclick="resetUI()" class="px-8 py-3 bg-transparent border border-white/30 hover:bg-white/10 hover:border-white transition-all duration-300 text-white/90 text-xs tracking-[0.2em] uppercase cursor-pointer flex items-center gap-3 rounded-full group">
+            <i data-lucide="arrow-left" class="w-4 h-4 group-hover:-translate-x-1 transition-transform"></i>
+            <span id="btn-error-back-text"></span>
+        </button>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        const i18n = {
+            en: {
+                title: "POPPY PLAYTIME",
+                subtitle: "COMMUNITY VR",
+                ch_nav: "Chapters",
+                prep_env: "Preparing environment...",
+                prep_desc: "Do not close this window.<br><br>The launcher is configuring and linking the local files for the VR mod.",
+                fail_init: "LAUNCH FAILED",
+                btn_back: "Back",
+                btn_exit: "EXIT LAUNCHER",
+                ch_locked: "CHAPTER LOCKED",
+                btn_immersive: "IMMERSIVE MODE",
+                desc_immersive_1: "CLEAR PROFILES & PAKS | NATIVE STEREO",
+                desc_immersive_2: "CLEAR PROFILES | NATIVE STEREO",
+                btn_vr: "VR MODE (RECOMMENDED)",
+                desc_vr_1: "UEVR PROFILE | NO PAKS | HEAD-AIMING",
+                desc_vr_2: "APPLY ZIP PROFILE | HEAD-AIMING",
+                btn_full_vr: "FULL VR MODE",
+                desc_full_vr_1: "UEVR PROFILE & PAKS | MOTION CONTROLS",
+                desc_full_vr_2: "APPLY ZIP PROFILE | MOTION CONTROLS",
+                btn_flat: "PLAY IN NORMAL FLAT MODE",
+                back_selector: "BACK TO CHAPTER SELECTOR",
+                boot_1: "Verifying file integrity...",
+                boot_2: "Loading interface modules...",
+                boot_3: "System ready.",
+                boot_init: "Booting neural system...",
+                prep_immersive: "Preparing Immersion (Clearing Files)...",
+                prep_full_vr: "Extracting UEVR Profile & Paks...",
+                prep_vr: "Extracting UEVR Profile & Starting...",
+                prep_flat: "Clearing mods & Starting in Flat Mode...",
+                err_unknown: "Unknown anomaly occurred in the system.",
+                err_hint: "Verify the integrity of your local files.",
+                chapter: "CHAPTER"
+            },
+            es: {
+                title: "POPPY PLAYTIME",
+                subtitle: "COMMUNITY VR",
+                ch_nav: "Capítulos",
+                prep_env: "Preparando entorno...",
+                prep_desc: "No cierre esta ventana.<br><br>El launcher está configurando y vinculando los archivos locales del mod VR.",
+                fail_init: "FALLO AL INICIAR",
+                btn_back: "Volver",
+                btn_exit: "SALIR DEL LAUNCHER",
+                ch_locked: "CAPÍTULO BLOQUEADO",
+                btn_immersive: "MODO INMERSIVO",
+                desc_immersive_1: "LIMPIAR PERFILES Y PAKS | NATIVE STEREO",
+                desc_immersive_2: "LIMPIAR PERFILES | NATIVE STEREO",
+                btn_vr: "MODO VR (RECOMENDADO)",
+                desc_vr_1: "PERFIL UEVR | SIN PAKS | HEAD-AIMING",
+                desc_vr_2: "APLICAR PERFIL ZIP | HEAD-AIMING",
+                btn_full_vr: "MODO FULL VR",
+                desc_full_vr_1: "PERFIL UEVR Y PAKS | MOTION CONTROLS",
+                desc_full_vr_2: "APLICAR PERFIL ZIP | MOTION CONTROLS",
+                btn_flat: "JUGAR EN MODO FLAT NORMAL",
+                back_selector: "VOLVER AL SELECTOR DE CAPÍTULOS",
+                boot_1: "Verificando integridad de archivos...",
+                boot_2: "Cargando módulos de interfaz...",
+                boot_3: "Sistema listo.",
+                boot_init: "Iniciando sistema neural...",
+                prep_immersive: "Preparando Inmersión (Limpiando Archivos)...",
+                prep_full_vr: "Extrayendo Perfil UEVR y Paks...",
+                prep_vr: "Extrayendo Perfil UEVR e Iniciando...",
+                prep_flat: "Limpiando mods e Iniciando en Modo Flat...",
+                err_unknown: "Ocurrió una anomalía desconocida en el sistema.",
+                err_hint: "Verifica la integridad de tus archivos locales.",
+                chapter: "CHAPTER" 
+            }
+        };
+
+        let currentLang = 'en';
+        const t = (key) => i18n[currentLang][key] || key;
+
+        const chaptersData = [
+            { id: 1, name: "A TIGHT SQUEEZE", bg: "ch1.jpg" },
+            { id: 2, name: "FLY IN A WEB", bg: "ch2.jpg" },
+            { id: 3, name: "DEEP SLEEP", bg: "ch3.jpg" },
+            { id: 4, name: "CHAPTER 4 (TBA)", bg: "ch4.jpg" },
+            { id: 5, name: "CHAPTER 5 (TBA)", bg: "ch5.jpg" }
+        ];
+
+        let availableChapters = [];
+        let activeChapterId = null;
+        let isDetailView = false;
+
+        function applyStaticTranslations() {
+            document.documentElement.lang = currentLang;
+            document.getElementById('lbl-chapters').textContent = t('ch_nav');
+            document.getElementById('loading-main-text').textContent = t('prep_env');
+            document.getElementById('loading-desc').innerHTML = t('prep_desc');
+            document.getElementById('error-title').textContent = t('fail_init');
+            document.getElementById('btn-error-back-text').textContent = t('btn_back');
+            document.getElementById('boot-text').textContent = t('boot_init');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const progressBar = document.getElementById('boot-progress');
+            const bootText = document.getElementById('boot-text');
+            
+            let progress = 0;
+            let langFetched = false;
+
+            const bootInterval = setInterval(async () => {
+                progress += Math.random() * 15;
+                if (progress > 100) progress = 100;
+                progressBar.style.width = `${progress}%`;
+
+                if (window.pywebview && window.pywebview.api && !langFetched) {
+                    currentLang = await window.pywebview.api.get_language();
+                    applyStaticTranslations();
+                    langFetched = true;
+                }
+
+                if (!langFetched) return; 
+
+                if (progress > 30 && progress < 60) bootText.textContent = t('boot_1');
+                if (progress >= 60 && progress < 90) bootText.textContent = t('boot_2');
+                if (progress >= 90) bootText.textContent = t('boot_3');
+
+                if (progress === 100) {
+                    clearInterval(bootInterval);
+                    checkSystemAndLaunchUI();
+                }
+            }, 300); 
+        });
+
+        async function checkSystemAndLaunchUI() {
+            try {
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                if (window.pywebview && window.pywebview.api) {
+                    const checkResult = await window.pywebview.api.check_files();
+                    if (checkResult.status === "success") {
+                        availableChapters = checkResult.available_chapters || [];
+                        transitionToMainUI();
+                    } else {
+                        transitionToError(checkResult.message, checkResult.hint);
+                    }
+                } else {
+                    setTimeout(() => {
+                        availableChapters = [1, 2, 3, 4, 5]; 
+                        applyStaticTranslations();
+                        transitionToMainUI();
+                    }, 500);
+                }
+            } catch (error) {
+                transitionToError("Fallo de comunicación con el motor local.", error.message);
+            }
+        }
+
+        function transitionToError(message, hint) {
+            const bootScreen = document.getElementById('boot-screen');
+            const errorView = document.getElementById('error-view');
+            
+            bootScreen.classList.add('opacity-0', 'pointer-events-none');
+            
+            setTimeout(() => {
+                bootScreen.style.display = 'none';
+                errorView.classList.remove('hidden');
+                errorView.classList.add('flex');
+                
+                document.getElementById('error-message').textContent = message || t('err_unknown');
+                document.getElementById('error-hint').textContent = hint || t('err_hint');
+                
+                const btn = document.getElementById('btn-error-back-text');
+                btn.textContent = t('btn_exit');
+                btn.closest('button').onclick = closeApp;
+                lucide.createIcons();
+            }, 500);
+        }
+
+        function transitionToMainUI() {
+            const bootScreen = document.getElementById('boot-screen');
+            const mainUI = document.getElementById('main-ui');
+            
+            bootScreen.classList.add('opacity-0', 'pointer-events-none');
+            
+            setTimeout(() => {
+                bootScreen.style.display = 'none';
+                mainUI.classList.remove('opacity-0', 'pointer-events-none');
+                mainUI.classList.add('pointer-events-auto');
+                
+                renderDynamicUI();
+            }, 1000); 
+        }
+
+        function renderDynamicUI() {
+            const container = document.getElementById('dynamic-view');
+            container.innerHTML = '';
+
+            if (!isDetailView) {
+                const galleryWrapper = document.createElement('div');
+                galleryWrapper.className = 'absolute inset-[-10%] w-[120%] h-[120%] -top-[10%] flex overflow-hidden z-0 fade-in';
+                
+                chaptersData.forEach((ch) => {
+                    const isAvailable = availableChapters.includes(ch.id);
+
+                    const panel = document.createElement('div');
+                    panel.className = 'relative h-full transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] transform -skew-x-[15deg] overflow-hidden border-r border-white/5 group flex-1 cursor-pointer hover:flex-[1.5] bg-[#050505]';
+                    
+                    panel.onclick = () => {
+                        activeChapterId = ch.id;
+                        isDetailView = true;
+                        renderDynamicUI();
+                    };
+
+                    let shiftClass = '';
+                    if (ch.id === 1) shiftClass = 'translate-x-[8vw] md:translate-x-[6vw]';
+                    if (ch.id === chaptersData.length) shiftClass = '-translate-x-[8vw] md:-translate-x-[6vw]';
+
+                    panel.innerHTML = `
+                        <div class="absolute inset-[-50%] transform skew-x-[15deg] scale-[1.2] origin-center bg-black">
+                            <img src="${ch.bg}" onerror="this.src='https://images.unsplash.com/photo-1542281286-9e0a16bb7366?q=80&w=1000&auto=format&fit=crop'" 
+                                 class="w-full h-full object-cover transition-all duration-[1000ms] grayscale opacity-20 group-hover:opacity-60 group-hover:grayscale-[20%]" alt="Chapter ${ch.id}" />
+                            <div class="absolute inset-0 bg-black/50 group-hover:bg-black/20 transition-all duration-500"></div>
+                        </div>
+
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 px-2 overflow-hidden">
+                            <div class="relative w-full h-full flex items-center justify-center ${shiftClass}">
+                                <span class="text-white/40 group-hover:text-white transition-colors duration-500 text-3xl md:text-5xl tracking-[0.3em] font-bold uppercase whitespace-nowrap transform -rotate-90">
+                                    ${t('chapter')} ${ch.id}
+                                </span>
+                                ${!isAvailable ? `<i data-lucide="lock" class="absolute bottom-16 md:bottom-20 w-5 h-5 md:w-6 md:h-6 text-white/20"></i>` : ''}
+                            </div>
+                        </div>
+                    `;
+                    galleryWrapper.appendChild(panel);
+                });
+
+                container.appendChild(galleryWrapper);
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10 pointer-events-none fade-in"></div>
+                    <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-transparent z-10 pointer-events-none fade-in"></div>
+                `);
+
+            } else {
+                const ch = chaptersData.find(c => c.id === activeChapterId);
+                const isAvailable = availableChapters.includes(ch.id);
+
+                const detailWrapper = document.createElement('div');
+                detailWrapper.className = 'absolute inset-0 w-full h-full card-enter';
+
+                const bgFull = document.createElement('div');
+                bgFull.className = 'absolute inset-0 w-full h-full z-0 bg-black overflow-hidden';
+                bgFull.innerHTML = `
+                    <img src="${ch.bg}" onerror="this.src='https://images.unsplash.com/photo-1542281286-9e0a16bb7366?q=80&w=1000&auto=format&fit=crop'" 
+                         class="w-full h-full object-cover opacity-60 grayscale-[30%] zoom-in-bg" alt="${ch.name}" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent"></div>
+                    <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent"></div>
+                `;
+                detailWrapper.appendChild(bgFull);
+
+                let buttonsHTML = '';
+                if (isAvailable) {
+                    if (ch.id === 1 || ch.id === 2) {
+                        buttonsHTML = `
+                            <div class="flex flex-col gap-3 w-full max-w-sm mx-auto pointer-events-auto">
+                                <button onclick="launchGame(${ch.id}, 'immersive')" 
+                                        class="flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white/5 border border-white/20 hover:bg-white/20 hover:border-white/50 transition-all duration-300 backdrop-blur-sm">
+                                    <span class="text-xs font-bold tracking-[0.2em] uppercase text-white">${t('btn_immersive')}</span>
+                                    <span class="text-[9px] tracking-[0.1em] text-white/50 mt-1">${t('desc_immersive_1')}</span>
+                                </button>
+
+                                <button onclick="launchGame(${ch.id}, 'vr')" 
+                                        class="flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white text-black hover:bg-white/80 transition-all duration-300 shadow-[0_0_15px_rgba(255,255,255,0.2)] group">
+                                    <span class="text-xs font-bold tracking-[0.2em] uppercase">${t('btn_vr')}</span>
+                                    <span class="text-[9px] tracking-[0.1em] text-black/60 mt-1">${t('desc_vr_1')}</span>
+                                </button>
+
+                                <button onclick="launchGame(${ch.id}, 'full_vr')" 
+                                        class="flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white/10 border border-white/30 hover:bg-white/30 transition-all duration-300 backdrop-blur-sm group">
+                                    <span class="text-xs font-bold tracking-[0.2em] uppercase text-white">${t('btn_full_vr')}</span>
+                                    <span class="text-[9px] tracking-[0.1em] text-white/70 mt-1">${t('desc_full_vr_1')}</span>
+                                </button>
+                                
+                                <button onclick="launchGame(${ch.id}, 'flat')" 
+                                        class="flex flex-col items-center justify-center w-full px-6 py-2 mt-2 rounded-full bg-transparent border border-transparent hover:border-white/10 hover:bg-white/5 transition-all duration-300 backdrop-blur-sm">
+                                    <span class="text-[10px] font-bold tracking-[0.2em] uppercase text-white/30 hover:text-white/60">${t('btn_flat')}</span>
+                                </button>
+                            </div>
+                        `;
+                    } else if (ch.id === 3 || ch.id === 4) {
+                        buttonsHTML = `
+                            <div class="flex flex-col gap-3 w-full max-w-sm mx-auto pointer-events-auto">
+                                <button onclick="launchGame(${ch.id}, 'immersive')" 
+                                        class="flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white/5 border border-white/20 hover:bg-white/20 hover:border-white/50 transition-all duration-300 backdrop-blur-sm">
+                                    <span class="text-xs font-bold tracking-[0.2em] uppercase text-white">${t('btn_immersive')}</span>
+                                    <span class="text-[9px] tracking-[0.1em] text-white/50 mt-1">${t('desc_immersive_2')}</span>
+                                </button>
+
+                                <button onclick="launchGame(${ch.id}, 'full_vr')" 
+                                        class="flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white text-black hover:bg-white/80 transition-all duration-300 shadow-[0_0_15px_rgba(255,255,255,0.2)] group">
+                                    <span class="text-xs font-bold tracking-[0.2em] uppercase">${t('btn_full_vr')}</span>
+                                    <span class="text-[9px] tracking-[0.1em] text-black/60 mt-1">${t('desc_full_vr_2')}</span>
+                                </button>
+                                
+                                <button onclick="launchGame(${ch.id}, 'flat')" 
+                                        class="flex flex-col items-center justify-center w-full px-6 py-2 mt-2 rounded-full bg-transparent border border-transparent hover:border-white/10 hover:bg-white/5 transition-all duration-300 backdrop-blur-sm">
+                                    <span class="text-[10px] font-bold tracking-[0.2em] uppercase text-white/30 hover:text-white/60">${t('btn_flat')}</span>
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        buttonsHTML = `
+                            <div class="flex flex-col gap-3 w-full max-w-sm mx-auto pointer-events-auto">
+                                <button onclick="launchGame(${ch.id}, 'immersive')" 
+                                        class="flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white/5 border border-white/20 hover:bg-white/20 hover:border-white/50 transition-all duration-300 backdrop-blur-sm">
+                                    <span class="text-xs font-bold tracking-[0.2em] uppercase text-white">${t('btn_immersive')}</span>
+                                    <span class="text-[9px] tracking-[0.1em] text-white/50 mt-1">${t('desc_immersive_2')}</span>
+                                </button>
+
+                                <button onclick="launchGame(${ch.id}, 'vr')" 
+                                        class="flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white text-black hover:bg-white/80 transition-all duration-300 shadow-[0_0_15px_rgba(255,255,255,0.2)] group">
+                                    <span class="text-xs font-bold tracking-[0.2em] uppercase">${t('btn_vr')}</span>
+                                    <span class="text-[9px] tracking-[0.1em] text-black/60 mt-1">${t('desc_vr_2')}</span>
+                                </button>
+
+                                <button onclick="launchGame(${ch.id}, 'flat')" 
+                                        class="flex flex-col items-center justify-center w-full px-6 py-2 mt-2 rounded-full bg-transparent border border-transparent hover:border-white/10 hover:bg-white/5 transition-all duration-300 backdrop-blur-sm">
+                                    <span class="text-[10px] font-bold tracking-[0.2em] uppercase text-white/30 hover:text-white/60">${t('btn_flat')}</span>
+                                </button>
+                            </div>
+                        `;
+                    }
+                } else {
+                    buttonsHTML = `
+                        <div class="px-12 py-4 rounded-full bg-white/5 border border-white/10 text-white/30 text-xs font-bold tracking-[0.2em] uppercase flex items-center gap-3 backdrop-blur-sm cursor-not-allowed mx-auto w-max">
+                            <i data-lucide="lock" class="w-4 h-4"></i> ${t('ch_locked')}
+                        </div>
+                    `;
+                }
+
+                const frontUI = document.createElement('div');
+                frontUI.className = 'absolute inset-0 flex flex-col justify-end items-center pb-12 md:pb-16 z-20 pointer-events-none px-6';
+                frontUI.innerHTML = `
+                    <div class="flex flex-col items-center w-full max-w-4xl text-center">
+                        <h3 class="text-white/50 tracking-[0.5em] text-sm mb-2">${t('chapter')} 0${ch.id}</h3>
+                        <h2 class="text-4xl md:text-6xl text-white tracking-widest drop-shadow-2xl mb-8 uppercase leading-tight">${ch.name}</h2>
+                        
+                        <div class="w-full mb-6">
+                            ${buttonsHTML}
+                        </div>
+
+                        <button onclick="goBack()" class="group flex items-center gap-3 text-white/50 hover:text-white transition-all cursor-pointer pointer-events-auto mt-4">
+                            <div class="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center group-hover:bg-white group-hover:text-black transition-all duration-300">
+                                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                            </div>
+                            <span class="text-[10px] tracking-[0.3em] font-bold uppercase">${t('back_selector')}</span>
+                        </button>
+                    </div>
+                `;
+                
+                detailWrapper.appendChild(frontUI);
+                container.appendChild(detailWrapper);
+            }
+
+            lucide.createIcons();
+        }
+
+        function goBack() {
+            isDetailView = false;
+            activeChapterId = null;
+            renderDynamicUI();
+        }
+
+        document.addEventListener('mousedown', function (e) {
+            if (e.button !== 0) return;                          
+            if (e.target.closest('button, a, input, select, .pointer-events-auto')) return; 
+            if (window.pywebview && window.pywebview.api) {
+                window.pywebview.api.start_drag();               
+            }
+        });
+
+        function closeApp() {
+            if (window.pywebview) window.pywebview.api.close_app();
+            else console.log("Cerrando aplicación...");
+        }
+
+        async function launchGame(chapterId, mode) {
+            const loadingView = document.getElementById('loading-view');
+            const loadingBg = document.getElementById('loading-bg');
+            const mainText = document.getElementById('loading-main-text');
+            
+            const targetChapter = chaptersData.find(c => c.id === chapterId);
+            loadingBg.src = targetChapter ? targetChapter.bg : '';
+            
+            loadingView.classList.remove('hidden');
+            loadingView.classList.add('flex');
+
+            if (mode === 'immersive') {
+                mainText.textContent = t('prep_immersive');
+            } else if (mode === 'full_vr') {
+                mainText.textContent = t('prep_full_vr');
+            } else if (mode === 'vr') {
+                mainText.textContent = t('prep_vr');
+            } else if (mode === 'flat') {
+                mainText.textContent = t('prep_flat');
+            }
+
+            if (window.pywebview) {
+                let result;
+                if (mode === 'flat') {
+                    result = await window.pywebview.api.launch_flat(chapterId);
+                } else {
+                    result = await window.pywebview.api.launch_vr(chapterId, mode); 
+                }
+
+                if (result && result.status === "error") { 
+                    showErrorState(result.message, result.hint);
+                }
+            }
+            lucide.createIcons();
+        }
+
+        function showErrorState(message, hint) {
+            const loadingView = document.getElementById('loading-view');
+            const errorView = document.getElementById('error-view');
+            
+            loadingView.classList.add('hidden');
+            loadingView.classList.remove('flex');
+
+            errorView.classList.remove('hidden');
+            errorView.classList.add('flex');
+            
+            document.getElementById('error-message').textContent = message || t('err_unknown');
+            document.getElementById('error-hint').textContent = hint || t('err_hint');
+
+            const btn = document.getElementById('btn-error-back-text');
+            btn.textContent = t('btn_back');
+            btn.closest('button').onclick = resetUI;
+            lucide.createIcons();
+        }
+
+        function resetUI() {
+            const loadingView = document.getElementById('loading-view');
+            const errorView = document.getElementById('error-view');
+
+            loadingView.classList.add('hidden');
+            loadingView.classList.remove('flex');
+            errorView.classList.add('hidden');
+            errorView.classList.remove('flex');
+            
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>
