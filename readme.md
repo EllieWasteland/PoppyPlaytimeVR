@@ -1,6 +1,6 @@
 <div align="center">
 
-# Poppy Playtime: VR Mod
+# Poppy Playtime: Community VR Mod Installer
 
 ![Release](https://img.shields.io/badge/Release-Latest-blue?style=for-the-badge)
 ![Windows](https://img.shields.io/badge/OS-Windows_Only-0078D6?style=for-the-badge&logo=windows&logoColor=white)
