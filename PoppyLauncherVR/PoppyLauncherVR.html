@@ -28,9 +28,6 @@
             color: #ffffff;
         }
 
-        .draggable { cursor: grab; }
-        .draggable:active { cursor: grabbing; }
-
         .fade-in {
             animation: fadeIn 0.8s ease forwards;
         }
@@ -84,17 +81,17 @@
     </style>
 </head>
 
-<body class="draggable h-screen w-screen m-0 flex flex-col relative overflow-hidden text-white">
+<body class="pywebview-drag-region h-screen w-screen m-0 flex flex-col relative overflow-hidden text-white">
 
-    <button onclick="closeApp()" class="absolute top-6 right-6 z-50 text-white/40 hover:text-white transition-colors focus:outline-none cursor-pointer pointer-events-auto">
-        <i data-lucide="x" class="w-6 h-6 hover:scale-110 transition-transform"></i>
+    <button onclick="closeApp()" class="pywebview-no-drag absolute top-6 right-6 z-[999] text-white/40 hover:text-white transition-colors focus:outline-none cursor-pointer">
+        <i data-lucide="x" class="w-6 h-6 hover:scale-110 transition-transform pointer-events-none"></i>
     </button>
 
     <div id="boot-screen" class="absolute inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-1000 pointer-events-auto">
         <img src="ch1.jpg" onerror="this.src='https://images.unsplash.com/photo-1505569128003-826cce428b10?q=80&w=2000&auto=format&fit=crop'" 
-             class="absolute inset-0 w-full h-full object-cover opacity-30 grayscale mix-blend-screen" alt="Fondo" />
+             class="absolute inset-0 w-full h-full object-cover opacity-30 grayscale mix-blend-screen pointer-events-none" alt="Fondo" />
         
-        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black pointer-events-none"></div>
 
         <div class="relative z-10 w-full max-w-md flex flex-col items-center mt-auto mb-32 px-8">
             <h1 class="text-3xl md:text-4xl text-white/90 tracking-[0.2em] mb-2 text-center drop-shadow-lg" id="app-title">
@@ -118,7 +115,7 @@
             </div>
             
             <div class="absolute left-1/2 -translate-x-1/2 text-[10px] font-semibold tracking-[0.25em] uppercase">
-                <span id="lbl-chapters" class="text-white cursor-pointer tracking-[0.4em]"></span>
+                <span id="lbl-chapters" class="pywebview-no-drag text-white cursor-pointer tracking-[0.4em]"></span>
             </div>
             <div></div>
         </nav>
@@ -154,8 +151,8 @@
             <p id="error-hint" class="text-white/40 text-xs italic tracking-wide mb-12"></p>
         </div>
 
-        <button onclick="resetUI()" class="px-8 py-3 bg-transparent border border-white/30 hover:bg-white/10 hover:border-white transition-all duration-300 text-white/90 text-xs tracking-[0.2em] uppercase cursor-pointer flex items-center gap-3 rounded-full group">
-            <i data-lucide="arrow-left" class="w-4 h-4 group-hover:-translate-x-1 transition-transform"></i>
+        <button onclick="resetUI()" class="pywebview-no-drag px-8 py-3 bg-transparent border border-white/30 hover:bg-white/10 hover:border-white transition-all duration-300 text-white/90 text-xs tracking-[0.2em] uppercase cursor-pointer flex items-center gap-3 rounded-full group">
+            <i data-lucide="arrow-left" class="w-4 h-4 group-hover:-translate-x-1 transition-transform pointer-events-none"></i>
             <span id="btn-error-back-text"></span>
         </button>
     </div>
@@ -188,7 +185,7 @@
                 boot_1: "Verifying file integrity...",
                 boot_2: "Loading interface modules...",
                 boot_3: "System ready.",
-                boot_init: "Booting neural system...",
+                boot_init: "Booting UEVR system...",
                 prep_immersive: "Preparing Immersion (Clearing Files)...",
                 prep_full_vr: "Extracting UEVR Profile & Paks...",
                 prep_vr: "Extracting UEVR Profile & Starting...",
@@ -221,7 +218,7 @@
                 boot_1: "Verificando integridad de archivos...",
                 boot_2: "Cargando módulos de interfaz...",
                 boot_3: "Sistema listo.",
-                boot_init: "Iniciando sistema neural...",
+                boot_init: "Iniciando sistema UEVR...",
                 prep_immersive: "Preparando Inmersión (Limpiando Archivos)...",
                 prep_full_vr: "Extrayendo Perfil UEVR y Paks...",
                 prep_vr: "Extrayendo Perfil UEVR e Iniciando...",
@@ -360,7 +357,7 @@
                     const isAvailable = availableChapters.includes(ch.id);
 
                     const panel = document.createElement('div');
-                    panel.className = 'relative h-full transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] transform -skew-x-[15deg] overflow-hidden border-r border-white/5 group flex-1 cursor-pointer hover:flex-[1.5] bg-[#050505]';
+                    panel.className = 'pywebview-no-drag relative h-full transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] transform -skew-x-[15deg] overflow-hidden border-r border-white/5 group flex-1 cursor-pointer hover:flex-[1.5] bg-[#050505]';
                     
                     panel.onclick = () => {
                         activeChapterId = ch.id;
@@ -420,25 +417,25 @@
                         buttonsHTML = `
                             <div class="flex flex-col gap-3 w-full max-w-sm mx-auto pointer-events-auto">
                                 <button onclick="launchGame(${ch.id}, 'immersive')" 
-                                        class="flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white/5 border border-white/20 hover:bg-white/20 hover:border-white/50 transition-all duration-300 backdrop-blur-sm">
+                                        class="pywebview-no-drag flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white/5 border border-white/20 hover:bg-white/20 hover:border-white/50 transition-all duration-300 backdrop-blur-sm">
                                     <span class="text-xs font-bold tracking-[0.2em] uppercase text-white">${t('btn_immersive')}</span>
                                     <span class="text-[9px] tracking-[0.1em] text-white/50 mt-1">${t('desc_immersive_1')}</span>
                                 </button>
 
                                 <button onclick="launchGame(${ch.id}, 'vr')" 
-                                        class="flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white text-black hover:bg-white/80 transition-all duration-300 shadow-[0_0_15px_rgba(255,255,255,0.2)] group">
+                                        class="pywebview-no-drag flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white text-black hover:bg-white/80 transition-all duration-300 shadow-[0_0_15px_rgba(255,255,255,0.2)] group">
                                     <span class="text-xs font-bold tracking-[0.2em] uppercase">${t('btn_vr')}</span>
                                     <span class="text-[9px] tracking-[0.1em] text-black/60 mt-1">${t('desc_vr_1')}</span>
                                 </button>
 
                                 <button onclick="launchGame(${ch.id}, 'full_vr')" 
-                                        class="flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white/10 border border-white/30 hover:bg-white/30 transition-all duration-300 backdrop-blur-sm group">
+                                        class="pywebview-no-drag flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white/10 border border-white/30 hover:bg-white/30 transition-all duration-300 backdrop-blur-sm group">
                                     <span class="text-xs font-bold tracking-[0.2em] uppercase text-white">${t('btn_full_vr')}</span>
                                     <span class="text-[9px] tracking-[0.1em] text-white/70 mt-1">${t('desc_full_vr_1')}</span>
                                 </button>
                                 
                                 <button onclick="launchGame(${ch.id}, 'flat')" 
-                                        class="flex flex-col items-center justify-center w-full px-6 py-2 mt-2 rounded-full bg-transparent border border-transparent hover:border-white/10 hover:bg-white/5 transition-all duration-300 backdrop-blur-sm">
+                                        class="pywebview-no-drag flex flex-col items-center justify-center w-full px-6 py-2 mt-2 rounded-full bg-transparent border border-transparent hover:border-white/10 hover:bg-white/5 transition-all duration-300 backdrop-blur-sm">
                                     <span class="text-[10px] font-bold tracking-[0.2em] uppercase text-white/30 hover:text-white/60">${t('btn_flat')}</span>
                                 </button>
                             </div>
@@ -447,19 +444,19 @@
                         buttonsHTML = `
                             <div class="flex flex-col gap-3 w-full max-w-sm mx-auto pointer-events-auto">
                                 <button onclick="launchGame(${ch.id}, 'immersive')" 
-                                        class="flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white/5 border border-white/20 hover:bg-white/20 hover:border-white/50 transition-all duration-300 backdrop-blur-sm">
+                                        class="pywebview-no-drag flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white/5 border border-white/20 hover:bg-white/20 hover:border-white/50 transition-all duration-300 backdrop-blur-sm">
                                     <span class="text-xs font-bold tracking-[0.2em] uppercase text-white">${t('btn_immersive')}</span>
                                     <span class="text-[9px] tracking-[0.1em] text-white/50 mt-1">${t('desc_immersive_2')}</span>
                                 </button>
 
                                 <button onclick="launchGame(${ch.id}, 'full_vr')" 
-                                        class="flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white text-black hover:bg-white/80 transition-all duration-300 shadow-[0_0_15px_rgba(255,255,255,0.2)] group">
+                                        class="pywebview-no-drag flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white text-black hover:bg-white/80 transition-all duration-300 shadow-[0_0_15px_rgba(255,255,255,0.2)] group">
                                     <span class="text-xs font-bold tracking-[0.2em] uppercase">${t('btn_full_vr')}</span>
                                     <span class="text-[9px] tracking-[0.1em] text-black/60 mt-1">${t('desc_full_vr_2')}</span>
                                 </button>
                                 
                                 <button onclick="launchGame(${ch.id}, 'flat')" 
-                                        class="flex flex-col items-center justify-center w-full px-6 py-2 mt-2 rounded-full bg-transparent border border-transparent hover:border-white/10 hover:bg-white/5 transition-all duration-300 backdrop-blur-sm">
+                                        class="pywebview-no-drag flex flex-col items-center justify-center w-full px-6 py-2 mt-2 rounded-full bg-transparent border border-transparent hover:border-white/10 hover:bg-white/5 transition-all duration-300 backdrop-blur-sm">
                                     <span class="text-[10px] font-bold tracking-[0.2em] uppercase text-white/30 hover:text-white/60">${t('btn_flat')}</span>
                                 </button>
                             </div>
@@ -468,19 +465,19 @@
                         buttonsHTML = `
                             <div class="flex flex-col gap-3 w-full max-w-sm mx-auto pointer-events-auto">
                                 <button onclick="launchGame(${ch.id}, 'immersive')" 
-                                        class="flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white/5 border border-white/20 hover:bg-white/20 hover:border-white/50 transition-all duration-300 backdrop-blur-sm">
+                                        class="pywebview-no-drag flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white/5 border border-white/20 hover:bg-white/20 hover:border-white/50 transition-all duration-300 backdrop-blur-sm">
                                     <span class="text-xs font-bold tracking-[0.2em] uppercase text-white">${t('btn_immersive')}</span>
                                     <span class="text-[9px] tracking-[0.1em] text-white/50 mt-1">${t('desc_immersive_2')}</span>
                                 </button>
 
                                 <button onclick="launchGame(${ch.id}, 'vr')" 
-                                        class="flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white text-black hover:bg-white/80 transition-all duration-300 shadow-[0_0_15px_rgba(255,255,255,0.2)] group">
+                                        class="pywebview-no-drag flex flex-col items-center justify-center w-full px-6 py-3 rounded-full bg-white text-black hover:bg-white/80 transition-all duration-300 shadow-[0_0_15px_rgba(255,255,255,0.2)] group">
                                     <span class="text-xs font-bold tracking-[0.2em] uppercase">${t('btn_vr')}</span>
                                     <span class="text-[9px] tracking-[0.1em] text-black/60 mt-1">${t('desc_vr_2')}</span>
                                 </button>
 
                                 <button onclick="launchGame(${ch.id}, 'flat')" 
-                                        class="flex flex-col items-center justify-center w-full px-6 py-2 mt-2 rounded-full bg-transparent border border-transparent hover:border-white/10 hover:bg-white/5 transition-all duration-300 backdrop-blur-sm">
+                                        class="pywebview-no-drag flex flex-col items-center justify-center w-full px-6 py-2 mt-2 rounded-full bg-transparent border border-transparent hover:border-white/10 hover:bg-white/5 transition-all duration-300 backdrop-blur-sm">
                                     <span class="text-[10px] font-bold tracking-[0.2em] uppercase text-white/30 hover:text-white/60">${t('btn_flat')}</span>
                                 </button>
                             </div>
@@ -505,11 +502,11 @@
                             ${buttonsHTML}
                         </div>
 
-                        <button onclick="goBack()" class="group flex items-center gap-3 text-white/50 hover:text-white transition-all cursor-pointer pointer-events-auto mt-4">
+                        <button onclick="goBack()" class="pywebview-no-drag group flex items-center gap-3 text-white/50 hover:text-white transition-all cursor-pointer pointer-events-auto mt-4">
                             <div class="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center group-hover:bg-white group-hover:text-black transition-all duration-300">
-                                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                                <i data-lucide="arrow-left" class="w-4 h-4 pointer-events-none"></i>
                             </div>
-                            <span class="text-[10px] tracking-[0.3em] font-bold uppercase">${t('back_selector')}</span>
+                            <span class="text-[10px] tracking-[0.3em] font-bold uppercase pointer-events-none">${t('back_selector')}</span>
                         </button>
                     </div>
                 `;
@@ -526,14 +523,6 @@
             activeChapterId = null;
             renderDynamicUI();
         }
-
-        document.addEventListener('mousedown', function (e) {
-            if (e.button !== 0) return;                          
-            if (e.target.closest('button, a, input, select, .pointer-events-auto')) return; 
-            if (window.pywebview && window.pywebview.api) {
-                window.pywebview.api.start_drag();               
-            }
-        });
 
         function closeApp() {
             if (window.pywebview) window.pywebview.api.close_app();

@@ -67,51 +67,6 @@ def obtener_pid(nombre_ejecutable):
     return None
 
 class LauncherAPI:
-    def __init__(self):
-        self._hwnd = None
-
-    class _POINT(ctypes.Structure):
-        _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
-
-    class _RECT(ctypes.Structure):
-        _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
-                    ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
-
-    def _get_hwnd(self):
-        if self._hwnd:
-            return self._hwnd
-        hwnd = ctypes.windll.user32.FindWindowW(None, "Poppy Playtime VR Launcher")
-        if hwnd:
-            self._hwnd = hwnd
-        return hwnd
-
-    def start_drag(self):
-        hwnd = self._get_hwnd()
-        if not hwnd:
-            return
-
-        user32 = ctypes.windll.user32
-        pt = self._POINT()
-        user32.GetCursorPos(ctypes.byref(pt))
-        start_mouse_x, start_mouse_y = pt.x, pt.y
-
-        rc = self._RECT()
-        user32.GetWindowRect(hwnd, ctypes.byref(rc))
-        start_win_x = rc.left
-        start_win_y = rc.top
-        win_w = rc.right - rc.left
-        win_h = rc.bottom - rc.top
-
-        def _drag_loop():
-            while user32.GetAsyncKeyState(0x01) & 0x8000:
-                user32.GetCursorPos(ctypes.byref(pt))
-                new_x = start_win_x + (pt.x - start_mouse_x)
-                new_y = start_win_y + (pt.y - start_mouse_y)
-                user32.MoveWindow(hwnd, new_x, new_y, win_w, win_h, False)
-                time.sleep(0.008)
-
-        threading.Thread(target=_drag_loop, daemon=True).start()
-
     def _wait_and_close(self, process):
         process.wait()
         self.close_app()
@@ -122,13 +77,16 @@ class LauncherAPI:
         return os.path.dirname(os.path.abspath(__file__))
 
     def get_language(self):
-        config_path = os.path.join(self._get_game_base_dir(), "ConfigPPCVRLauncher.json")
+        base_dir = self._get_game_base_dir()
+        config_path = os.path.join(base_dir, "ConfigPPCVRLauncher.json")
+        
         try:
             if os.path.exists(config_path):
                 with open(config_path, 'r', encoding='utf-8') as f:
                     config = json.load(f)
                     return config.get("language", "en")
-        except:
+        except Exception as e:
+            print(f"Error al leer JSON de idioma: {e}")
             pass
         return "en"
 
@@ -313,7 +271,7 @@ class LauncherAPI:
     def close_app(self):
         if webview.windows:
             webview.windows[0].destroy()
-        sys.exit(0)
+        os._exit(0)
 
 if __name__ == "__main__":
     if getattr(sys, 'frozen', False):
@@ -335,15 +293,9 @@ if __name__ == "__main__":
         width=1200,   
         height=750,   
         frameless=True,
-        easy_drag=False,
+        easy_drag=True,
         transparent=False,
         background_color='#0f172a' 
     )
 
-    def on_shown():
-        import time as _t
-        _t.sleep(0.3)
-        api._get_hwnd()
-
-    window.events.shown += on_shown
     webview.start()
