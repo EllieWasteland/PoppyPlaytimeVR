@@ -12,6 +12,7 @@ import zipfile
 import urllib.request
 import tempfile
 import ssl
+import webbrowser
 from pyinjector import inject
 
 CONFIG_JUEGOS = {
@@ -67,6 +68,10 @@ def obtener_pid(nombre_ejecutable):
     return None
 
 class LauncherAPI:
+    def __init__(self):
+        # Definiendo la versión actual de la aplicación
+        self.CURRENT_VERSION = "v1.0.0-beta"
+
     def _wait_and_close(self, process):
         process.wait()
         self.close_app()
@@ -87,6 +92,39 @@ class LauncherAPI:
         except Exception:
             pass
         return "en"
+
+    def check_updates(self):
+        """Verifica en GitHub si hay una nueva versión disponible basándose en el TAG de Releases."""
+        try:
+            url = "https://api.github.com/repos/EllieWasteland/PoppyPlaytimeVR/releases"
+            req = urllib.request.Request(url, headers={'User-Agent': 'PoppyPlaytimeVR-Launcher'})
+            
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            
+            # Timeout reducido a 1.5 segundos para evitar bloqueos sin internet
+            with urllib.request.urlopen(req, context=ctx, timeout=1.5) as response:
+                if response.status == 200:
+                    data = json.loads(response.read().decode('utf-8'))
+                    if data and len(data) > 0:
+                        # Obtenemos el release más reciente
+                        latest_release = data[0]
+                        latest_version = latest_release.get("tag_name", "")
+                        release_url = latest_release.get("html_url", "")
+                        
+                        # Si la versión de GitHub no es la misma que la actual, notificamos
+                        if latest_version and latest_version != self.CURRENT_VERSION:
+                            return {"update_available": True, "version": latest_version, "url": release_url}
+        except Exception as e:
+            # Silenciar errores si el usuario no tiene internet para no molestar la experiencia offline
+            pass
+            
+        return {"update_available": False}
+
+    def open_url(self, url):
+        """Abre un enlace en el navegador predeterminado del sistema operativo"""
+        webbrowser.open(url)
 
     def _set_boot_status(self, text):
         try:
@@ -201,7 +239,7 @@ class LauncherAPI:
             msg = "Error interno al verificar archivos." if lang == "es" else "Internal error verifying files."
             return {"status": "error", "message": msg, "hint": str(e)}
 
-    def launch_vr(self, chapter_id, mode):
+    def launch_vr(self, chapter_id, mode, uevr_version="stable", vr_api="openxr"):
         chapter_id = int(chapter_id)
         config = CONFIG_JUEGOS.get(chapter_id)
         lang = self.get_language()
@@ -236,6 +274,21 @@ class LauncherAPI:
                         os.remove(pak_abs_path)
                         
             elif mode in ["full_vr", "vr"]:
+                # 1. Gestionar archivos .pak PRIMERO (Si el capítulo los utiliza)
+                if "pak_file" in config:
+                    pak_dest_folder = os.path.join(game_base_dir, os.path.normpath(config["pak_folder"]))
+                    pak_dest = os.path.join(pak_dest_folder, config["pak_file"])
+                    
+                    if mode == "full_vr" and "pak_source_path" in config:
+                        pak_src = obtener_ruta_recurso(os.path.normpath(config["pak_source_path"]))
+                        if os.path.exists(pak_src):
+                            os.makedirs(pak_dest_folder, exist_ok=True)
+                            shutil.copy2(pak_src, pak_dest)
+                    elif mode == "vr":
+                        if os.path.exists(pak_dest):
+                            os.remove(pak_dest)
+
+                # 2. Descomprimir el ZIP del perfil y luego modificar config.txt
                 zip_abs_path = obtener_ruta_recurso(os.path.normpath(config["zip_path"]))
                 if os.path.exists(zip_abs_path):
                     dest_folder = os.path.join(uevr_root, config["profile_name"])
@@ -246,18 +299,30 @@ class LauncherAPI:
                     with zipfile.ZipFile(zip_abs_path, 'r') as zip_ref:
                         zip_ref.extractall(dest_folder)
                         
-                    if "pak_file" in config:
-                        pak_dest_folder = os.path.join(game_base_dir, os.path.normpath(config["pak_folder"]))
-                        pak_dest = os.path.join(pak_dest_folder, config["pak_file"])
-                        
-                        if mode == "full_vr" and "pak_source_path" in config:
-                            pak_src = obtener_ruta_recurso(os.path.normpath(config["pak_source_path"]))
-                            if os.path.exists(pak_src):
-                                os.makedirs(pak_dest_folder, exist_ok=True)
-                                shutil.copy2(pak_src, pak_dest)
-                        elif mode == "vr":
-                            if os.path.exists(pak_dest):
-                                os.remove(pak_dest)
+                    # --- LÓGICA DE CONFIG.TXT PARA OPENXR/OPENVR ---
+                    config_txt_path = os.path.join(dest_folder, "config.txt")
+                    target_runtime = "openvr_api.dll" if vr_api == "openvr" else "openxr_loader.dll"
+                    
+                    if os.path.exists(config_txt_path):
+                        with open(config_txt_path, 'r', encoding='utf-8') as f:
+                            lines = f.readlines()
+                            
+                        runtime_found = False
+                        for i, line in enumerate(lines):
+                            if line.strip().startswith("Frontend_RequestedRuntime="):
+                                lines[i] = f"Frontend_RequestedRuntime={target_runtime}\n"
+                                runtime_found = True
+                                break
+                                
+                        if not runtime_found:
+                            lines.append(f"\nFrontend_RequestedRuntime={target_runtime}\n")
+                            
+                        with open(config_txt_path, 'w', encoding='utf-8') as f:
+                            f.writelines(lines)
+                    else:
+                        with open(config_txt_path, 'w', encoding='utf-8') as f:
+                            f.write(f"Frontend_RequestedRuntime={target_runtime}\n")
+                    # -----------------------------------------------
                 else:
                     msg = "Zip de perfil no encontrado." if lang == "es" else "Profile Zip not found."
                     hnt = f"Falta {config['zip_path']} en la carpeta." if lang == "es" else f"Missing {config['zip_path']} in folder."
@@ -285,11 +350,12 @@ class LauncherAPI:
         if pid:
             time.sleep(8) 
             try:
-                # Utilizamos la versión estable para inyectar por defecto
-                stable_dir = os.path.join(game_base_dir, "LauncherVRFiles", "UEVR Stable")
-                dlls = self._get_dll_paths(stable_dir)
+                # Determinamos la carpeta según la versión elegida en el frontend (Stable o Nightly)
+                version_folder = "UEVR Nightly" if uevr_version == "nightly" else "UEVR Stable"
+                uevr_dir = os.path.join(game_base_dir, "LauncherVRFiles", version_folder)
+                dlls = self._get_dll_paths(uevr_dir)
                 
-                ruta_loader = dlls.get("openxr_loader.dll")
+                ruta_loader = dlls.get("openvr_api.dll") if vr_api == "openvr" else dlls.get("openxr_loader.dll")
                 ruta_backend = dlls.get("UEVRBackend.dll")
                 
                 if ruta_loader and os.path.exists(ruta_loader):
@@ -301,7 +367,7 @@ class LauncherAPI:
                     threading.Thread(target=self._wait_and_close, args=(game_process,), daemon=True).start()
                     return {"status": "success"}
                 else:
-                    msg = "UEVRBackend.dll no encontrado en LauncherVRFiles" if lang == "es" else "UEVRBackend.dll not found in LauncherVRFiles"
+                    msg = f"UEVRBackend.dll no encontrado en {version_folder}" if lang == "es" else f"UEVRBackend.dll not found in {version_folder}"
                     hnt = "Elimina la carpeta LauncherVRFiles para forzar la descarga." if lang == "es" else "Delete the LauncherVRFiles folder to force redownload."
                     return {"status": "error", "message": msg, "hint": hnt}
             except Exception as e:
