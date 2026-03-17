@@ -9,6 +9,9 @@ import webview
 import json
 import shutil
 import zipfile
+import urllib.request
+import tempfile
+import ssl
 from pyinjector import inject
 
 CONFIG_JUEGOS = {
@@ -54,9 +57,6 @@ def obtener_ruta_recurso(rel_path):
     else:
         return os.path.join(os.path.dirname(os.path.abspath(__file__)), rel_path)
 
-RUTA_UEVR_BACKEND = obtener_ruta_recurso(os.path.join("UEVR", "UEVRBackend.dll"))
-RUTA_UEVR_LOADER  = obtener_ruta_recurso(os.path.join("UEVR", "openxr_loader.dll"))
-
 def obtener_pid(nombre_ejecutable):
     for proceso in psutil.process_iter(['pid', 'name']):
         try:
@@ -79,16 +79,59 @@ class LauncherAPI:
     def get_language(self):
         base_dir = self._get_game_base_dir()
         config_path = os.path.join(base_dir, "ConfigPPCVRLauncher.json")
-        
         try:
             if os.path.exists(config_path):
                 with open(config_path, 'r', encoding='utf-8') as f:
                     config = json.load(f)
                     return config.get("language", "en")
-        except Exception as e:
-            print(f"Error al leer JSON de idioma: {e}")
+        except Exception:
             pass
         return "en"
+
+    def _set_boot_status(self, text):
+        try:
+            if webview.windows:
+                safe_text = text.replace("'", "\\'")
+                webview.windows[0].evaluate_js(f"document.getElementById('boot-text').textContent = '{safe_text}';")
+        except Exception:
+            pass
+
+    def _get_dll_paths(self, folder):
+        """Busca recursivamente los DLLs requeridos y devuelve sus rutas absolutas."""
+        paths = {}
+        dlls_to_find = ["UEVRBackend.dll", "openxr_loader.dll", "openvr_api.dll"]
+        
+        if not os.path.exists(folder):
+            return paths
+            
+        for root, dirs, files in os.walk(folder):
+            for dll in dlls_to_find:
+                if dll in files and dll not in paths:
+                    paths[dll] = os.path.join(root, dll)
+        return paths
+
+    def _has_all_dlls(self, folder):
+        paths = self._get_dll_paths(folder)
+        return len(paths) == 3
+
+    def _download_and_extract(self, url, dest_folder):
+        """Descarga y extrae el ZIP desde una URL a la carpeta destino."""
+        # Ignorar certificados SSL para evitar problemas de conexión en Windows
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+
+        os.makedirs(dest_folder, exist_ok=True)
+        temp_zip = os.path.join(tempfile.gettempdir(), "uevr_temp.zip")
+        
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, context=ctx) as response, open(temp_zip, 'wb') as out_file:
+            shutil.copyfileobj(response, out_file)
+            
+        with zipfile.ZipFile(temp_zip, 'r') as zip_ref:
+            zip_ref.extractall(dest_folder)
+        
+        os.remove(temp_zip)
 
     def check_files(self):
         try:
@@ -96,11 +139,39 @@ class LauncherAPI:
             game_base_dir = self._get_game_base_dir()
             lang = self.get_language()
             
-            if not os.path.exists(RUTA_UEVR_BACKEND) or not os.path.exists(RUTA_UEVR_LOADER):
-                msg = "Faltan las dependencias de UEVR." if lang == "es" else "UEVR dependencies missing."
-                hnt = "Verifica que la carpeta 'UEVR' esté junto al launcher." if lang == "es" else "Verify the 'UEVR' folder is next to the launcher."
+            # 1. Comprobación y Descarga de UEVR
+            vr_files_dir = os.path.join(game_base_dir, "LauncherVRFiles")
+            stable_dir = os.path.join(vr_files_dir, "UEVR Stable")
+            nightly_dir = os.path.join(vr_files_dir, "UEVR Nightly")
+            
+            stable_url = "https://github.com/praydog/UEVR/releases/download/1.05/UEVR.zip"
+            nightly_url = "https://github.com/praydog/UEVR-nightly/releases/download/nightly-01127-6f66affc01cea22e4b1b5a47986e1ade80ccbd26/uevr.zip"
+            
+            try:
+                if not self._has_all_dlls(stable_dir):
+                    msg_st = "DOWNLOADING UEVR STABLE..." if lang == "en" else "DESCARGANDO UEVR STABLE..."
+                    self._set_boot_status(msg_st)
+                    self._download_and_extract(stable_url, stable_dir)
+                    
+                if not self._has_all_dlls(nightly_dir):
+                    msg_nt = "DOWNLOADING UEVR NIGHTLY..." if lang == "en" else "DESCARGANDO UEVR NIGHTLY..."
+                    self._set_boot_status(msg_nt)
+                    self._download_and_extract(nightly_url, nightly_dir)
+            except Exception as e:
+                msg = "Error al descargar dependencias de UEVR." if lang == "es" else "Error downloading UEVR dependencies."
+                hnt = "Revisa tu conexión a internet." if lang == "es" else "Check your internet connection."
+                return {"status": "error", "message": msg, "hint": f"{hnt} ({e})"}
+
+            # Verificación final de los DLLs tras la posible descarga
+            if not self._has_all_dlls(stable_dir) or not self._has_all_dlls(nightly_dir):
+                msg = "Faltan archivos DLL de UEVR." if lang == "es" else "UEVR DLL files missing."
+                hnt = "Tu antivirus podría estar bloqueando las descargas." if lang == "es" else "Your antivirus might be blocking the downloads."
                 return {"status": "error", "message": msg, "hint": hnt}
             
+            # Restaurar el texto del progreso
+            self._set_boot_status("System ready." if lang == "en" else "Sistema listo.")
+            
+            # 2. Comprobación de los juegos (Archivos locales)
             for ch_id, config in CONFIG_JUEGOS.items():
                 exe_abs_path = os.path.join(game_base_dir, os.path.normpath(config["exe"]))
                 if os.path.exists(exe_abs_path):
@@ -125,6 +196,7 @@ class LauncherAPI:
                 return {"status": "error", "message": msg, "hint": hnt}
                 
             return {"status": "success", "available_chapters": available_chapters}
+            
         except Exception as e:
             msg = "Error interno al verificar archivos." if lang == "es" else "Internal error verifying files."
             return {"status": "error", "message": msg, "hint": str(e)}
@@ -213,16 +285,24 @@ class LauncherAPI:
         if pid:
             time.sleep(8) 
             try:
-                if os.path.exists(RUTA_UEVR_LOADER):
-                    inject(pid, RUTA_UEVR_LOADER)
+                # Utilizamos la versión estable para inyectar por defecto
+                stable_dir = os.path.join(game_base_dir, "LauncherVRFiles", "UEVR Stable")
+                dlls = self._get_dll_paths(stable_dir)
+                
+                ruta_loader = dlls.get("openxr_loader.dll")
+                ruta_backend = dlls.get("UEVRBackend.dll")
+                
+                if ruta_loader and os.path.exists(ruta_loader):
+                    inject(pid, ruta_loader)
                     time.sleep(0.5)
-                if os.path.exists(RUTA_UEVR_BACKEND):
-                    inject(pid, RUTA_UEVR_BACKEND)
+                
+                if ruta_backend and os.path.exists(ruta_backend):
+                    inject(pid, ruta_backend)
                     threading.Thread(target=self._wait_and_close, args=(game_process,), daemon=True).start()
                     return {"status": "success"}
                 else:
-                    msg = "UEVRBackend.dll no encontrado" if lang == "es" else "UEVRBackend.dll not found"
-                    hnt = "Asegúrate de que la carpeta 'UEVR' esté incluida." if lang == "es" else "Make sure the 'UEVR' folder is included."
+                    msg = "UEVRBackend.dll no encontrado en LauncherVRFiles" if lang == "es" else "UEVRBackend.dll not found in LauncherVRFiles"
+                    hnt = "Elimina la carpeta LauncherVRFiles para forzar la descarga." if lang == "es" else "Delete the LauncherVRFiles folder to force redownload."
                     return {"status": "error", "message": msg, "hint": hnt}
             except Exception as e:
                 msg = f"Error de inyección: {e}" if lang == "es" else f"Injection error: {e}"

@@ -274,9 +274,12 @@
 
                 if (!langFetched) return; 
 
-                if (progress > 30 && progress < 60) bootText.textContent = t('boot_1');
-                if (progress >= 60 && progress < 90) bootText.textContent = t('boot_2');
-                if (progress >= 90) bootText.textContent = t('boot_3');
+                // Solo actualizar el texto si no está siendo sobrescrito por Python (para descargas)
+                if(!bootText.textContent.includes("DOWNLOAD") && !bootText.textContent.includes("DESCARG")) {
+                    if (progress > 30 && progress < 60) bootText.textContent = t('boot_1');
+                    if (progress >= 60 && progress < 90) bootText.textContent = t('boot_2');
+                    if (progress >= 90) bootText.textContent = t('boot_3');
+                }
 
                 if (progress === 100) {
                     clearInterval(bootInterval);
@@ -290,6 +293,7 @@
                 await new Promise(resolve => setTimeout(resolve, 300));
 
                 if (window.pywebview && window.pywebview.api) {
+                    // Python ahora manejará la descarga de UEVR dentro de esta función
                     const checkResult = await window.pywebview.api.check_files();
                     if (checkResult.status === "success") {
                         availableChapters = checkResult.available_chapters || [];
