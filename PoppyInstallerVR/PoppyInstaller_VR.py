@@ -63,7 +63,7 @@ class InstallApi:
         return None
 
     def install(self, folder_path, lenguaje="en"):
-        """Ejecuta la instalación: Copiar el .exe, crear JSON y acceso directo."""
+        """Ejecuta la instalación: Copiar el .exe, crear JSON, acceso directo y eliminar OpenXR."""
         try:
             folder_path = os.path.normpath(folder_path)
             
@@ -98,6 +98,17 @@ class InstallApi:
                 shortcut.Save()
             except Exception as e:
                 print(f"No se pudo crear el acceso directo: {e}")
+
+            # 4. Eliminar la carpeta OpenXR si existe
+            try:
+                openxr_path = os.path.join(folder_path, "WindowsNoEditor", "Engine", "Binaries", "ThirdParty", "OpenXR")
+                if os.path.exists(openxr_path):
+                    shutil.rmtree(openxr_path)
+                    print(f"Carpeta OpenXR eliminada exitosamente en: {openxr_path}")
+                else:
+                    print(f"La carpeta OpenXR no existe en la ruta especificada. Se omite la eliminación.")
+            except Exception as e:
+                print(f"No se pudo eliminar la carpeta OpenXR: {e}")
 
             return "success"
             
