@@ -50,7 +50,3 @@ This project is made possible by the hard work of the VR developer community:
 ## Legal Disclaimer
 
 This mod is a non-profit fan project. No copyright infringement is intended in any way. *Poppy Playtime* and all its characters, models, and assets are the exclusive intellectual property of **Mob Entertainment**. It is mandatory to own a legitimate copy of the base game to use this modification.
-"""
-
-# Si deseas imprimirlo en la consola para verificar su contenido:
-# print(readme_content)
