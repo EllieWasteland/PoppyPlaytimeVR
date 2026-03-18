@@ -1,5 +1,4 @@
-# Variable que contiene el README.md modificado con la versión Offline
-readme_content = """<div align="center">
+<div align="center">
 
 # Poppy Playtime: Community VR Mod Installer
 
