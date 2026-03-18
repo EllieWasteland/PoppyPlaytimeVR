@@ -1,4 +1,5 @@
-<div align="center">
+# Variable que contiene el README.md modificado con la versión Offline
+readme_content = """<div align="center">
 
 # Poppy Playtime: Community VR Mod Installer
 
@@ -27,11 +28,14 @@ Poppy Playtime VR Mod is a virtual reality modification that completely transfor
 
 ## Download and Installation
 
-The automated installer (`PoppyInstaller_VR.exe`) is available in the **[Releases](../../releases)** section of this repository.
+The automated web installer (`PoppyInstaller_VR.exe`) is available in the **[Releases](../../releases)** section of this repository. **We highly recommend using this standard version** to ensure you always receive the latest updates, movement profiles, and bug fixes directly from the repositories.
+
+**💾 Full Offline Build (March 2026) - *Fallback Only***
+In addition to the standard web installer, the Releases section now includes a **Full Offline Installer**. **Please only use this version if the standard online installer fails for any reason.** This is a frozen, fully self-contained package compiled in March 2026. It comes pre-packaged with all the necessary movement profiles, the complete UEVR engine, and every dependency required. It is specifically designed to run in environments with zero or poor internet connection, and serves as a permanent backup in case the original download services go offline or remote resources are ever deleted.
 
 **Steps:**
 
-1. Download the latest version from the *Releases* tab.
+1. Download the latest version (Web Installer or Full Offline) from the *Releases* tab.
 2. Run the installer and grant Administrator permissions when prompted, as they are required to apply the necessary patches.
 3. The installer will attempt to detect your game folder automatically. If it does not, manually select the installation directory for each chapter.
 4. Click **Install** and wait for the process to complete.
@@ -47,3 +51,7 @@ This project is made possible by the hard work of the VR developer community:
 ## Legal Disclaimer
 
 This mod is a non-profit fan project. No copyright infringement is intended in any way. *Poppy Playtime* and all its characters, models, and assets are the exclusive intellectual property of **Mob Entertainment**. It is mandatory to own a legitimate copy of the base game to use this modification.
+"""
+
+# Si deseas imprimirlo en la consola para verificar su contenido:
+# print(readme_content)
