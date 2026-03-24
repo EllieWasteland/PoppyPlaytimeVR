@@ -3,7 +3,7 @@ import os
 import sys
 import shutil
 import json
-import win32com.client  
+from pyshortcuts import make_shortcut  # Reemplazamos win32com por pyshortcuts
 
 def get_base_path():
     if hasattr(sys, '_MEIPASS'):
@@ -87,15 +87,20 @@ class InstallApi:
             except Exception as e:
                 print(f"No se pudo crear el archivo JSON de configuración: {e}")
 
-            # 3. Crear Acceso Directo en el Escritorio
+            # 3. Crear Acceso Directo usando pyshortcuts
             try:
-                shortcut_path = os.path.join(self.desktop_path, "PoppyLauncherVR.lnk")
-                shell = win32com.client.Dispatch("WScript.Shell")
-                shortcut = shell.CreateShortCut(shortcut_path)
-                shortcut.TargetPath = exe_dest
-                shortcut.WorkingDirectory = folder_path
-                shortcut.Description = "Launcher de Poppy Community VR"
-                shortcut.Save()
+                icon_path = os.path.join(self.base_dir, "logo.ico") # <-- Obtenemos la ruta del icono
+                make_shortcut(
+                    script=exe_dest,       # El archivo base 
+                    executable=exe_dest,   # Forzamos el ejecutable para evitar que use el Instalador
+                    name='PoppyLauncherVR',
+                    description='Launcher de Poppy Community VR',
+                    icon=icon_path,        # <-- AÑADIDO: Le pasamos el icono al acceso directo
+                    terminal=False,    
+                    desktop=True,      
+                    startmenu=True     
+                )
+                print("Acceso directo creado exitosamente con pyshortcuts.")
             except Exception as e:
                 print(f"No se pudo crear el acceso directo: {e}")
 

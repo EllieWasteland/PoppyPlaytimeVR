@@ -40,7 +40,8 @@ CONFIG_JUEGOS = {
     4: {
         "exe": r"Playtime_Chapter4\ch4_pro\Binaries\Win64\ch4_pro-Win64-Shipping.exe",
         "profile_name": "ch4_pro-Win64-Shipping",
-        "zip_path": r"chapters\ch4\ch4_pro-Win64-Shipping.zip"
+        "zip_path": r"chapters\ch4\ch4_pro-Win64-Shipping.zip",
+        "immersive_zip_path": r"chapters\ch4\inmersive_ch4_pro-Win64-Shipping.zip"
     },
     5: {
         "exe": r"Chapter5\ch5_pro\Binaries\Win64\ch5_pro-Win64-Shipping.exe",
@@ -268,6 +269,38 @@ class LauncherAPI:
                 if os.path.exists(profile_dir):
                     shutil.rmtree(profile_dir)
                     
+                # NUEVO: Descomprimir el perfil especial inmersivo si está definido
+                if "immersive_zip_path" in config:
+                    imm_zip_abs = obtener_ruta_recurso(os.path.normpath(config["immersive_zip_path"]))
+                    if os.path.exists(imm_zip_abs):
+                        os.makedirs(profile_dir, exist_ok=True)
+                        with zipfile.ZipFile(imm_zip_abs, 'r') as zip_ref:
+                            zip_ref.extractall(profile_dir)
+                            
+                        # Configurar config.txt para el runtime deseado
+                        config_txt_path = os.path.join(profile_dir, "config.txt")
+                        target_runtime = "openvr_api.dll" if vr_api == "openvr" else "openxr_loader.dll"
+                        
+                        if os.path.exists(config_txt_path):
+                            with open(config_txt_path, 'r', encoding='utf-8') as f:
+                                lines = f.readlines()
+                                
+                            runtime_found = False
+                            for i, line in enumerate(lines):
+                                if line.strip().startswith("Frontend_RequestedRuntime="):
+                                    lines[i] = f"Frontend_RequestedRuntime={target_runtime}\n"
+                                    runtime_found = True
+                                    break
+                                    
+                            if not runtime_found:
+                                lines.append(f"\nFrontend_RequestedRuntime={target_runtime}\n")
+                                
+                            with open(config_txt_path, 'w', encoding='utf-8') as f:
+                                f.writelines(lines)
+                        else:
+                            with open(config_txt_path, 'w', encoding='utf-8') as f:
+                                f.write(f"Frontend_RequestedRuntime={target_runtime}\n")
+                                
                 if "pak_file" in config:
                     pak_abs_path = os.path.join(game_base_dir, os.path.normpath(config["pak_folder"]), config["pak_file"])
                     if os.path.exists(pak_abs_path):

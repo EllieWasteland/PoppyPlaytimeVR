@@ -109,7 +109,10 @@
         
         <nav class="w-full flex justify-between items-center px-10 py-8 absolute top-0 z-50 pointer-events-auto">
             <div class="flex items-center gap-4">
-                <span class="font-bold text-xl tracking-[0.2em] text-white whitespace-nowrap">COMMUNITY <span class="text-white/50">VR</span></span>
+                <div class="flex items-baseline gap-3">
+                    <span class="font-bold text-xl tracking-[0.2em] text-white whitespace-nowrap">COMMUNITY <span class="text-white/50">VR</span></span>
+                    <span class="text-[10px] font-bold text-white/40 tracking-[0.2em] uppercase hidden sm:block">v1.0.0-beta <span class="text-white/20">| build 230326</span></span>
+                </div>
                 
                 <div class="w-px h-5 bg-white/20 hidden md:block"></div>
                 
@@ -120,9 +123,6 @@
                 </div>
             </div>
             
-            <div class="absolute left-1/2 -translate-x-1/2 text-[10px] font-semibold tracking-[0.25em] uppercase hidden md:block">
-                <span id="lbl-chapters" class="pywebview-no-drag text-white cursor-pointer tracking-[0.4em]"></span>
-            </div>
             <div></div>
         </nav>
 
@@ -216,9 +216,9 @@
             en: {
                 title: "POPPY PLAYTIME",
                 subtitle: "COMMUNITY VR",
-                ch_nav: "Chapters",
                 prep_env: "Preparing environment...",
-                prep_desc: "Do not close this window.<br><br>The launcher is configuring and linking the local files for the VR mod.",
+                prep_desc_boot: "Do not close this window.<br><br>The launcher is configuring and linking the local files for the VR mod.",
+                prep_desc_launch: "Do not close this window, and wait 1 to 2 minutes for everything to initialize.<br><br>If nothing appears, reinstall the launcher with the latest version and tell us your experience in our Discord channel if the problem persists.",
                 fail_init: "LAUNCH FAILED",
                 btn_back: "Back",
                 btn_exit: "EXIT LAUNCHER",
@@ -238,10 +238,8 @@
                 boot_2: "Loading interface modules...",
                 boot_3: "System ready.",
                 boot_init: "Booting UEVR system...",
-                prep_immersive: "Preparing Immersion (Clearing Files)...",
-                prep_full_vr: "Extracting UEVR Profile & Paks...",
-                prep_vr: "Extracting UEVR Profile & Starting...",
-                prep_flat: "Clearing mods & Starting in Flat Mode...",
+                prep_vr_launch: "STARTING POPPY PLAYTIME IN VR...",
+                prep_flat_launch: "STARTING POPPY PLAYTIME IN FLAT MODE...",
                 err_unknown: "Unknown anomaly occurred in the system.",
                 err_hint: "Verify the integrity of your local files.",
                 chapter: "CHAPTER",
@@ -259,9 +257,9 @@
             es: {
                 title: "POPPY PLAYTIME",
                 subtitle: "COMMUNITY VR",
-                ch_nav: "Capítulos",
                 prep_env: "Preparando entorno...",
-                prep_desc: "No cierre esta ventana.<br><br>El launcher está configurando y vinculando los archivos locales del mod VR.",
+                prep_desc_boot: "No cierre esta ventana.<br><br>El launcher está configurando y vinculando los archivos locales del mod VR.",
+                prep_desc_launch: "No cierres esta ventana, y espera entre 1 a 2 minutos a que se inicialice todo.<br><br>En caso de que no aparezca nada, reinstala el instalador con la última versión y cuéntanos tu experiencia en el canal de Discord si no se soluciona tu problema.",
                 fail_init: "FALLO AL INICIAR",
                 btn_back: "Volver",
                 btn_exit: "SALIR DEL LAUNCHER",
@@ -281,10 +279,8 @@
                 boot_2: "Cargando módulos de interfaz...",
                 boot_3: "Sistema listo.",
                 boot_init: "Iniciando sistema UEVR...",
-                prep_immersive: "Preparando Inmersión (Limpiando Archivos)...",
-                prep_full_vr: "Extrayendo Perfil UEVR y Paks...",
-                prep_vr: "Extrayendo Perfil UEVR e Iniciando...",
-                prep_flat: "Limpiando mods e Iniciando en Modo Flat...",
+                prep_vr_launch: "INICIANDO POPPY PLAYTIME EN VR...",
+                prep_flat_launch: "INICIANDO POPPY PLAYTIME EN MODO FLAT...",
                 err_unknown: "Ocurrió una anomalía desconocida en el sistema.",
                 err_hint: "Verifica la integridad de tus archivos locales.",
                 chapter: "CHAPTER",
@@ -311,8 +307,8 @@
             { id: 1, name: "A TIGHT SQUEEZE", bg: "ch1.jpg" },
             { id: 2, name: "FLY IN A WEB", bg: "ch2.jpg" },
             { id: 3, name: "DEEP SLEEP", bg: "ch3.jpg" },
-            { id: 4, name: "CHAPTER 4 (TBA)", bg: "ch4.jpg" },
-            { id: 5, name: "CHAPTER 5 (TBA)", bg: "ch5.jpg" }
+            { id: 4, name: "SAFE HAVEN", bg: "ch4.jpg" },
+            { id: 5, name: "BROKEN THINGS", bg: "ch5.jpg" }
         ];
 
         let availableChapters = [];
@@ -337,9 +333,8 @@
 
         function applyStaticTranslations() {
             document.documentElement.lang = currentLang;
-            document.getElementById('lbl-chapters').textContent = t('ch_nav');
             document.getElementById('loading-main-text').textContent = t('prep_env');
-            document.getElementById('loading-desc').innerHTML = t('prep_desc');
+            document.getElementById('loading-desc').innerHTML = t('prep_desc_boot');
             document.getElementById('error-title').textContent = t('fail_init');
             document.getElementById('btn-error-back-text').textContent = t('btn_back');
             document.getElementById('boot-text').textContent = t('boot_init');
@@ -720,14 +715,13 @@
             loadingView.classList.remove('hidden');
             loadingView.classList.add('flex');
 
-            if (mode === 'immersive') {
-                mainText.textContent = t('prep_immersive');
-            } else if (mode === 'full_vr') {
-                mainText.textContent = t('prep_full_vr');
-            } else if (mode === 'vr') {
-                mainText.textContent = t('prep_vr');
-            } else if (mode === 'flat') {
-                mainText.textContent = t('prep_flat');
+            // Establecemos la nueva descripción global al iniciar cualquier capítulo
+            document.getElementById('loading-desc').innerHTML = t('prep_desc_launch');
+
+            if (mode === 'flat') {
+                mainText.textContent = t('prep_flat_launch');
+            } else {
+                mainText.textContent = t('prep_vr_launch');
             }
 
             if (window.pywebview) {
