@@ -453,6 +453,17 @@ class LauncherAPI:
         os._exit(0)
 
 if __name__ == "__main__":
+    # --- FIX PARA PERMISOS DE EDGE WEBVIEW2 EN MODO ADMINISTRADOR ---
+    # Obtenemos la ruta de LocalAppData (o AppData, o Temp como rescate)
+    safe_app_data = os.environ.get('LOCALAPPDATA', os.environ.get('APPDATA', tempfile.gettempdir()))
+    # Creamos una carpeta segura y pública para que Edge almacene sus temporales
+    webview_cache_dir = os.path.join(safe_app_data, "PoppyLauncherVR", "WebView2Cache")
+    os.makedirs(webview_cache_dir, exist_ok=True)
+    
+    # Le indicamos a la ventana de Edge que use este directorio específico
+    os.environ["WEBVIEW2_USER_DATA_FOLDER"] = webview_cache_dir
+    # -----------------------------------------------------------------
+
     if getattr(sys, 'frozen', False):
         base_dir = sys._MEIPASS
         exe_dir = os.path.dirname(sys.executable)
