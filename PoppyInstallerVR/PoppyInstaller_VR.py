@@ -89,13 +89,15 @@ class InstallApi:
 
             # 3. Crear Acceso Directo usando pyshortcuts
             try:
-                icon_path = os.path.join(self.base_dir, "logo.ico") # <-- Obtenemos la ruta del icono
+                # MODIFICACIÓN: Usamos el propio ejecutable de destino como fuente del icono.
+                valid_icon = exe_dest if os.path.exists(exe_dest) else None
+                
                 make_shortcut(
                     script=exe_dest,       # El archivo base 
                     executable=exe_dest,   # Forzamos el ejecutable para evitar que use el Instalador
                     name='PoppyLauncherVR',
                     description='Launcher de Poppy Community VR',
-                    icon=icon_path,        # <-- AÑADIDO: Le pasamos el icono al acceso directo
+                    icon=valid_icon,       # Pasamos directamente el .exe como icono
                     terminal=False,    
                     desktop=True,      
                     startmenu=True     
